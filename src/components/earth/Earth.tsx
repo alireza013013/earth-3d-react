@@ -59,13 +59,13 @@ const Earth = () => {
 
         // camera
         const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000)
-        camera.position.set(0, 2, 11)
+        camera.position.set(0, 0, 11)
         scene.add(camera)
 
 
         // controls
-        const controls = new OrbitControls(camera, canvas)
-        controls.enableDamping = true
+        // const controls = new OrbitControls(camera, canvas)
+        // controls.enableDamping = true
 
         // texture loader
         const textureLoader = new THREE.TextureLoader()
@@ -278,7 +278,7 @@ const Earth = () => {
 
 
             // update control
-            controls.update()
+            // controls.update()
 
             // update renderer
             renderer.render(scene, camera)
