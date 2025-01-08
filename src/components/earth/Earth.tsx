@@ -12,9 +12,40 @@ const Earth = () => {
 
     useEffect(() => {
 
+        // helper function for create wireframemode sphere
+        const generateFibonacciSphere = (numPoints: number, radius: number) => {
+            const points = [];
+            const goldenRatio = (1 + Math.sqrt(5)) / 2;
+            const angleIncrement = Math.PI * 2 * goldenRatio;
+
+            for (let i = 0; i < numPoints; i++) {
+                const t = i / numPoints;
+                const inclination = Math.acos(1 - 2 * t);
+                const azimuth = angleIncrement * i;
+
+                const x = radius * Math.sin(inclination) * Math.cos(azimuth);
+                const y = radius * Math.sin(inclination) * Math.sin(azimuth);
+                const z = radius * Math.cos(inclination);
+
+                points.push({ x, y, z });
+            }
+
+            return points;
+        };
+
+        const isNearby = (p1: { x: number, y: number, z: number }, p2: { x: number, y: number, z: number }, radius: number, factorDisrance: number) => {
+            const distance = Math.sqrt(
+                Math.pow(p1.x - p2.x, 2) +
+                Math.pow(p1.y - p2.y, 2) +
+                Math.pow(p1.z - p2.z, 2)
+            );
+            return distance < radius * factorDisrance;
+        };
+
         // load gui
         const gui = new GUI()
         gui.close()
+        gui.hide()
 
         // find canvas element
         const canvas = document.getElementById("canvas")
@@ -46,173 +77,193 @@ const Earth = () => {
         scene.add(earthGroup)
 
         // Earth with texture in Core
-        const materialEarthCore = new THREE.MeshStandardMaterial({
-            map: earthAlphaTexture,
-            metalness: 0.82,
-            roughness: 0.42,
-        })
-        const EarthCoreMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(3),
-            materialEarthCore
-        )
-        earthGroup.add(EarthCoreMesh)
+        const createEarthCore = () => {
+            const materialEarthCore = new THREE.MeshStandardMaterial({
+                map: earthAlphaTexture,
+                metalness: 0.82,
+                roughness: 0.42,
+            })
+            const EarthCoreMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(3),
+                materialEarthCore
+            )
+            earthGroup.add(EarthCoreMesh)
 
-        gui.add(materialEarthCore, "roughness").min(0).max(1).step(0.001).name("roughness")
-        gui.add(materialEarthCore, "metalness").min(0).max(1).step(0.001).name("metalness")
-
+            gui.add(materialEarthCore, "roughness").min(0).max(1).step(0.001).name("roughness")
+            gui.add(materialEarthCore, "metalness").min(0).max(1).step(0.001).name("metalness")
+        }
 
         // Earth Sphere nearest to core
-        const pointCount = 100;
-        const radius = 3.08;
+        const createSphereNearestCore = () => {
+            const pointCount = 100;
+            const radius = 3.08;
+            // particle
+            const particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(pointCount * 3);
+            const points = generateFibonacciSphere(pointCount, radius);
+            points.forEach((point, index) => {
+                positions[index * 3] = point.x;
+                positions[index * 3 + 1] = point.y;
+                positions[index * 3 + 2] = point.z;
+            });
 
-        // particle
-        const particlesGeometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(pointCount * 3);
-        const points = generateFibonacciSphere(pointCount, radius);
-        points.forEach((point, index) => {
-            positions[index * 3] = point.x;
-            positions[index * 3 + 1] = point.y;
-            positions[index * 3 + 2] = point.z;
-        });
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: "#1db0b8",
+                size: 0.3,
+                transparent: true,
+                alphaMap: particleTexture,
+                opacity: 1,
+                depthWrite: false
 
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            color: "#1db0b8",
-            size: 0.3,
-            transparent: true,
-            alphaMap: particleTexture,
-            opacity: 0.7,
-            depthWrite: false
+            });
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            earthGroup.add(particles)
 
-        });
-        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-        earthGroup.add(particles)
-
-        // line triangels
-        const trianglesGeometry = new THREE.BufferGeometry();
-        const triangleVertices = [];
-        for (let i = 0; i < points.length; i++) {
-            for (let j = i + 1; j < points.length; j++) {
-                for (let k = j + 1; k < points.length; k++) {
-                    if (
-                        isNearby(points[i], points[j], radius, 0.5) &&
-                        isNearby(points[j], points[k], radius, 0.5) &&
-                        isNearby(points[k], points[i], radius, 0.5)
-                    ) {
-                        triangleVertices.push(
-                            points[i].x, points[i].y, points[i].z,
-                            points[j].x, points[j].y, points[j].z,
-                            points[k].x, points[k].y, points[k].z
-                        );
+            // line triangels
+            const trianglesGeometry = new THREE.BufferGeometry();
+            const triangleVertices = [];
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    for (let k = j + 1; k < points.length; k++) {
+                        if (
+                            isNearby(points[i], points[j], radius, 0.5) &&
+                            isNearby(points[j], points[k], radius, 0.5) &&
+                            isNearby(points[k], points[i], radius, 0.5)
+                        ) {
+                            triangleVertices.push(
+                                points[i].x, points[i].y, points[i].z,
+                                points[j].x, points[j].y, points[j].z,
+                                points[k].x, points[k].y, points[k].z
+                            );
+                        }
                     }
                 }
             }
+
+            trianglesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(triangleVertices, 3));
+            const trianglesMaterial = new THREE.MeshBasicMaterial({
+                color: "#1db0b8",
+                side: THREE.DoubleSide,
+                wireframe: true,
+                opacity: 0.05,
+                transparent: true,
+                depthWrite: true
+            });
+            const trianglesMesh = new THREE.Mesh(trianglesGeometry, trianglesMaterial);
+            earthGroup.add(trianglesMesh)
+
         }
-
-        trianglesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(triangleVertices, 3));
-        const trianglesMaterial = new THREE.MeshBasicMaterial({
-            color: "#1db0b8",
-            side: THREE.DoubleSide,
-            wireframe: true,
-            opacity: 0.05,
-            transparent: true,
-            depthWrite: true
-        });
-        const trianglesMesh = new THREE.Mesh(trianglesGeometry, trianglesMaterial);
-        earthGroup.add(trianglesMesh)
-
-
 
         // atmosphere
-        const atmosphereMaterial = getAtmosphereMat();
-        const atmosphereGeometry = new THREE.SphereGeometry(3.18, 64, 64);
-        const atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-        earthGroup.add(atmosphereMesh)
-
+        const createAtmosphere = () => {
+            const material = getAtmosphereMat()
+            const glowGeometry = new THREE.SphereGeometry(3.6, 32, 32);
+            const glowMesh = new THREE.Mesh(glowGeometry, material);
+            scene.add(glowMesh);
+        }
 
         // Earth Sphere farthest to core
-        const pointCountFarthestSphere = 60;
-        const radiusFarthestSphere = 4;
+        const createSphereFarthestCore = () => {
+            const pointCount = 60;
+            const radius = 4;
 
-        // particle
-        const particlesGeometryFarthestSphere = new THREE.BufferGeometry();
-        const positionsFarthestSphere = new Float32Array(pointCount * 3);
-        const pointsFarthestSphere = generateFibonacciSphere(pointCountFarthestSphere, radiusFarthestSphere);
-        pointsFarthestSphere.forEach((point, index) => {
-            positionsFarthestSphere[index * 3] = point.x;
-            positionsFarthestSphere[index * 3 + 1] = point.y;
-            positionsFarthestSphere[index * 3 + 2] = point.z;
-        });
+            // particle
+            const particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(pointCount * 3);
+            const points = generateFibonacciSphere(pointCount, radius);
+            points.forEach((point, index) => {
+                positions[index * 3] = point.x;
+                positions[index * 3 + 1] = point.y;
+                positions[index * 3 + 2] = point.z;
+            });
 
-        particlesGeometryFarthestSphere.setAttribute('position', new THREE.BufferAttribute(positionsFarthestSphere, 3));
-        const particlesMaterialFarthestSphere = new THREE.PointsMaterial({
-            color: "#ffffff",
-            size: 0.3,
-            transparent: true,
-            alphaMap: particleTexture,
-            opacity: 0.8,
-            depthWrite: false
-        });
-        const particlesFarthestSphere = new THREE.Points(particlesGeometryFarthestSphere, particlesMaterialFarthestSphere);
-        earthGroup.add(particlesFarthestSphere)
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: "#ffffff",
+                size: 0.3,
+                transparent: true,
+                alphaMap: particleTexture,
+                opacity: 0.8,
+                depthWrite: false
+            });
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            earthGroup.add(particlesMesh)
 
-        // line triangels
-        const trianglesGeometryFarthestSphere = new THREE.BufferGeometry();
-        const triangleVerticesFarthestSphere = [];
-        for (let i = 0; i < pointsFarthestSphere.length; i++) {
-            for (let j = i + 1; j < pointsFarthestSphere.length; j++) {
-                for (let k = j + 1; k < pointsFarthestSphere.length; k++) {
-                    if (
-                        isNearby(pointsFarthestSphere[i], pointsFarthestSphere[j], radiusFarthestSphere, 0.62) &&
-                        isNearby(pointsFarthestSphere[j], pointsFarthestSphere[k], radiusFarthestSphere, 0.62) &&
-                        isNearby(pointsFarthestSphere[k], pointsFarthestSphere[i], radiusFarthestSphere, 0.62)
-                    ) {
-                        triangleVerticesFarthestSphere.push(
-                            pointsFarthestSphere[i].x, pointsFarthestSphere[i].y, pointsFarthestSphere[i].z,
-                            pointsFarthestSphere[j].x, pointsFarthestSphere[j].y, pointsFarthestSphere[j].z,
-                            pointsFarthestSphere[k].x, pointsFarthestSphere[k].y, pointsFarthestSphere[k].z
-                        );
+            // line triangels
+            const trianglesGeometry = new THREE.BufferGeometry();
+            const triangleVertices = [];
+            for (let i = 0; i < points.length; i++) {
+                for (let j = i + 1; j < points.length; j++) {
+                    for (let k = j + 1; k < points.length; k++) {
+                        if (
+                            isNearby(points[i], points[j], radius, 0.62) &&
+                            isNearby(points[j], points[k], radius, 0.62) &&
+                            isNearby(points[k], points[i], radius, 0.62)
+                        ) {
+                            triangleVertices.push(
+                                points[i].x, points[i].y, points[i].z,
+                                points[j].x, points[j].y, points[j].z,
+                                points[k].x, points[k].y, points[k].z
+                            );
+                        }
                     }
                 }
             }
+
+            trianglesGeometry.setAttribute('position', new THREE.Float32BufferAttribute(triangleVertices, 3));
+            const trianglesMaterial = new THREE.MeshBasicMaterial({
+                color: "#ffffff",
+                side: THREE.DoubleSide,
+                wireframe: true,
+                opacity: 0.03,
+                transparent: true,
+                depthWrite: false
+            });
+            const trianglesMesh = new THREE.Mesh(trianglesGeometry, trianglesMaterial);
+            earthGroup.add(trianglesMesh)
+
         }
 
-        trianglesGeometryFarthestSphere.setAttribute('position', new THREE.Float32BufferAttribute(triangleVerticesFarthestSphere, 3));
-        const trianglesMaterialFarthestSphere = new THREE.MeshBasicMaterial({
-            color: "#ffffff",
-            side: THREE.DoubleSide,
-            wireframe: true,
-            opacity: 0.04,
-            transparent: true,
-        });
-        const trianglesMeshFarthestSphere = new THREE.Mesh(trianglesGeometryFarthestSphere, trianglesMaterialFarthestSphere);
-        earthGroup.add(trianglesMeshFarthestSphere)
-
-
         // directional light
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1)
-        directionalLight.position.set(0.25, 3, 1)
-        scene.add(directionalLight)
+        const createDirectionalLight = () => {
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1)
+            directionalLight.position.set(0.25, 3, 1)
+            scene.add(directionalLight)
 
-        gui.add(directionalLight, "intensity").min(0).max(10).step(0.1).name("intensity directional Light")
-        gui.add(directionalLight.position, "x").min(-5).max(5).step(0.1).name("x directional Light")
-        gui.add(directionalLight.position, "y").min(-5).max(5).step(0.1).name("y directional Light")
-        gui.add(directionalLight.position, "z").min(-5).max(5).step(0.1).name("z directional Light")
+            gui.add(directionalLight, "intensity").min(0).max(10).step(0.1).name("intensity directional Light")
+            gui.add(directionalLight.position, "x").min(-5).max(5).step(0.1).name("x directional Light")
+            gui.add(directionalLight.position, "y").min(-5).max(5).step(0.1).name("y directional Light")
+            gui.add(directionalLight.position, "z").min(-5).max(5).step(0.1).name("z directional Light")
+
+        }
 
         // ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1)
-        scene.add(ambientLight)
-        gui.add(ambientLight, "intensity").min(0).max(10).step(0.1).name("ambientLight intensity")
+        const createAmbientLight = () => {
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+            scene.add(ambientLight)
+            gui.add(ambientLight, "intensity").min(0).max(10).step(0.1).name("ambientLight intensity")
+        }
+
+
+
+        // call Function For initilize
+        createEarthCore()
+        createSphereNearestCore()
+        createAtmosphere()
+        createSphereFarthestCore()
+        createDirectionalLight()
+        createAmbientLight()
+
+
 
         // renderer
         const renderer = new THREE.WebGLRenderer({
             canvas: canvas as HTMLCanvasElement,
             antialias: true
         })
-        // renderer.physicallyCorrectLights = true
         renderer.setSize(sizes.width, sizes.height)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
 
 
         // tick function
@@ -254,34 +305,7 @@ const Earth = () => {
 
     }, [])
 
-    const generateFibonacciSphere = (numPoints: number, radius: number) => {
-        const points = [];
-        const goldenRatio = (1 + Math.sqrt(5)) / 2;
-        const angleIncrement = Math.PI * 2 * goldenRatio;
 
-        for (let i = 0; i < numPoints; i++) {
-            const t = i / numPoints;
-            const inclination = Math.acos(1 - 2 * t);
-            const azimuth = angleIncrement * i;
-
-            const x = radius * Math.sin(inclination) * Math.cos(azimuth);
-            const y = radius * Math.sin(inclination) * Math.sin(azimuth);
-            const z = radius * Math.cos(inclination);
-
-            points.push({ x, y, z });
-        }
-
-        return points;
-    };
-
-    const isNearby = (p1: { x: number, y: number, z: number }, p2: { x: number, y: number, z: number }, radius: number, factorDisrance: number) => {
-        const distance = Math.sqrt(
-            Math.pow(p1.x - p2.x, 2) +
-            Math.pow(p1.y - p2.y, 2) +
-            Math.pow(p1.z - p2.z, 2)
-        );
-        return distance < radius * factorDisrance;
-    };
 
     return (
         <canvas id="canvas" className="wrbgl"></canvas>

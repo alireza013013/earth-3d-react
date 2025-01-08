@@ -1,51 +1,42 @@
 import * as THREE from "three";
 
-function getAtmosphereMat({ rimHex = 0x1db0b8, facingHex = 0x000000 } = {}) {
-    const uniforms = {
-        color1: { value: new THREE.Color(rimHex) },
-        color2: { value: new THREE.Color(facingHex) },
-        atmosphereBias: { value: 0.1 },
-        atmosphereScale: { value: 2.0 },
-        atmospherePower: { value: 6.0 },
-    };
-    const vs = `
-  uniform float atmosphereBias;
-  uniform float atmosphereScale;
-  uniform float atmospherePower;
-  
-  varying float vReflectionFactor;
-  
-  void main() {
-    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-    vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-  
-    vec3 worldNormal = normalize( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * normal );
-  
-    vec3 I = worldPosition.xyz - cameraPosition;
-  
-    vReflectionFactor = atmosphereBias + atmosphereScale * pow( 1.0 + dot( normalize( I ), worldNormal ), atmospherePower );
-  
-    gl_Position = projectionMatrix * mvPosition;
-  }
-  `;
-    const fs = `
-  uniform vec3 color1;
-  uniform vec3 color2;
-  
-  varying float vReflectionFactor;
-  
-  void main() {
-    float f = clamp( vReflectionFactor, 0.0, 1.0 );
-    gl_FragColor = vec4(mix(color2, color1, vec3(f)), f);
-  }
-  `;
-    const atmosphereMat = new THREE.ShaderMaterial({
-        uniforms: uniforms,
-        vertexShader: vs,
-        fragmentShader: fs,
-        transparent: true,
-        depthWrite: false
-    });
-    return atmosphereMat;
+function getAtmosphereMat() {
+  const atmosphereShader = {
+    uniforms: {
+      c: { value: 0.71 },
+      p: { value: 5.5 },
+      viewVector: { value: new THREE.Vector3(0, 0, 11) },
+    },
+    vertexShader: `
+    uniform float c;
+    uniform float p;
+    uniform vec3 viewVector;
+    varying float intensity;
+    
+    void main() {
+      vec3 vNormal = normalize(normalMatrix * normal);
+      vec3 vViewPosition = normalize(viewVector - (modelViewMatrix * vec4(position, 1.0)).xyz);
+      intensity = pow(c - dot(vNormal, vViewPosition), p);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+    fragmentShader: `
+    varying float intensity;
+    void main() {
+      vec3 atmosphereColor = vec3(0.10, 0.25, 0.27);
+      gl_FragColor = vec4(atmosphereColor * intensity, 1);
+    }
+  `,
+  };
+  const atmosphereMaterial = new THREE.ShaderMaterial({
+    uniforms: atmosphereShader.uniforms,
+    vertexShader: atmosphereShader.vertexShader,
+    fragmentShader: atmosphereShader.fragmentShader,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  return atmosphereMaterial
 }
 export { getAtmosphereMat };
