@@ -1,6 +1,6 @@
 import './Earth.css'
 import * as THREE from "three"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import GUI from 'lil-gui';
 import { useEffect } from 'react';
 import alphaTexture from "../../assets/textures/alpha.jpg"
