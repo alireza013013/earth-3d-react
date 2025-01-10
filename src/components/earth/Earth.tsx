@@ -256,7 +256,7 @@ const Earth = () => {
             previousTime = elapsedTime
 
             // update eath group
-            earthGroup.rotation.y += deltaTime
+            earthGroup.rotation.y += deltaTime * 0.2
 
 
 
