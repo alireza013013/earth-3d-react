@@ -1,7 +1,5 @@
 import './Earth.css'
 import * as THREE from "three"
-// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
-import GUI from 'lil-gui';
 import { useEffect } from 'react';
 import alphaTexture from "../../assets/textures/alpha.jpg"
 import particleTextureImage from "../../assets/textures/particelTexture.png"
@@ -42,10 +40,6 @@ const Earth = () => {
             return distance < radius * factorDisrance;
         };
 
-        // load gui
-        const gui = new GUI()
-        gui.close()
-        gui.hide()
 
         // find canvas element
         const canvas = document.getElementById("canvas")
@@ -61,11 +55,6 @@ const Earth = () => {
         const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 1000)
         camera.position.set(0, 0, 11)
         scene.add(camera)
-
-
-        // controls
-        // const controls = new OrbitControls(camera, canvas)
-        // controls.enableDamping = true
 
         // texture loader
         const textureLoader = new THREE.TextureLoader()
@@ -89,8 +78,6 @@ const Earth = () => {
             )
             earthGroup.add(EarthCoreMesh)
 
-            gui.add(materialEarthCore, "roughness").min(0).max(1).step(0.001).name("roughness")
-            gui.add(materialEarthCore, "metalness").min(0).max(1).step(0.001).name("metalness")
         }
 
         // Earth Sphere nearest to core
@@ -230,19 +217,12 @@ const Earth = () => {
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1.1)
             directionalLight.position.set(0.25, 3, 1)
             scene.add(directionalLight)
-
-            gui.add(directionalLight, "intensity").min(0).max(10).step(0.1).name("intensity directional Light")
-            gui.add(directionalLight.position, "x").min(-5).max(5).step(0.1).name("x directional Light")
-            gui.add(directionalLight.position, "y").min(-5).max(5).step(0.1).name("y directional Light")
-            gui.add(directionalLight.position, "z").min(-5).max(5).step(0.1).name("z directional Light")
-
         }
 
         // ambient light
         const createAmbientLight = () => {
             const ambientLight = new THREE.AmbientLight(0xffffff, 1)
             scene.add(ambientLight)
-            gui.add(ambientLight, "intensity").min(0).max(10).step(0.1).name("ambientLight intensity")
         }
 
 
@@ -268,17 +248,17 @@ const Earth = () => {
 
         // tick function
         const clock = new THREE.Clock()
+        let previousTime = 0
+
         const tick = () => {
             const elapsedTime = clock.getElapsedTime()
-
+            const deltaTime = elapsedTime - previousTime
+            previousTime = elapsedTime
 
             // update eath group
-            // earthGroup.rotation.x = elapsedTime * 0.3
-            earthGroup.rotation.y = elapsedTime * 0.2
+            earthGroup.rotation.y += deltaTime
 
 
-            // update control
-            // controls.update()
 
             // update renderer
             renderer.render(scene, camera)
