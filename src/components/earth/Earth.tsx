@@ -58,8 +58,26 @@ const Earth = () => {
 
         // texture loader
         const textureLoader = new THREE.TextureLoader()
-        const earthAlphaTexture = textureLoader.load(alphaTexture)
-        const particleTexture = textureLoader.load(particleTextureImage)
+        const earthAlphaTexture = textureLoader.load(alphaTexture,
+            (onLoad) => {
+                console.log("earth loaded successfully", onLoad);
+
+            },
+            (progress) => {
+                console.log("earth progress", progress);
+            }, (error) => {
+                console.log("earth error", error);
+            })
+        const particleTexture = textureLoader.load(particleTextureImage,
+            (onLoad) => {
+                console.log("partciels loaded successfully", onLoad);
+
+            },
+            (progress) => {
+                console.log("partciels progress", progress);
+            }, (error) => {
+                console.log("partciels error", error);
+            })
 
         // create group earth
         const earthGroup = new THREE.Group()
