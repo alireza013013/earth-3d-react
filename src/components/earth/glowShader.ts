@@ -3,8 +3,6 @@ import * as THREE from "three";
 function getAtmosphereMat() {
   const atmosphereShader = {
     uniforms: {
-      // c: { value: 0.71 },
-      // p: { value: 5.5 },
       c: { value: 0.8 },
       p: { value: 5.5 },
       viewVector: { value: new THREE.Vector3(0, 0, 11) },

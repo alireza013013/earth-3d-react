@@ -71,7 +71,6 @@ const Earth = () => {
         const particleTexture = textureLoader.load(particleTextureImage,
             (onLoad) => {
                 console.log("partciels loaded successfully", onLoad);
-
             },
             (progress) => {
                 console.log("partciels progress", progress);
@@ -246,7 +245,6 @@ const Earth = () => {
 
 
         // call Function For initilize
-        // createEarthCore()
         createSphereNearestCore()
         createAtmosphere()
         createSphereFarthestCore()
