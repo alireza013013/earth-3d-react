@@ -163,7 +163,7 @@ const Earth = () => {
         // atmosphere
         const createAtmosphere = () => {
             const material = getAtmosphereMat()
-            const glowGeometry = new THREE.SphereGeometry(3.4, 32, 32);
+            const glowGeometry = new THREE.SphereGeometry(3.3, 32, 32);
             const glowMesh = new THREE.Mesh(glowGeometry, material);
             scene.add(glowMesh);
         }
