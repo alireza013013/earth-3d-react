@@ -61,7 +61,7 @@ const Earth = () => {
         const earthAlphaTexture = textureLoader.load(alphaTexture,
             (onLoad) => {
                 console.log("earth loaded successfully", onLoad);
-
+                createEarthCore()
             },
             (progress) => {
                 console.log("earth progress", progress);
@@ -246,7 +246,7 @@ const Earth = () => {
 
 
         // call Function For initilize
-        createEarthCore()
+        // createEarthCore()
         createSphereNearestCore()
         createAtmosphere()
         createSphereFarthestCore()
